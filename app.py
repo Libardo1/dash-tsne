@@ -8,7 +8,6 @@ import pandas as pd
 import plotly.graph_objs as go
 from sklearn.decomposition import PCA
 
-
 app = dash.Dash("T-SNE")
 server = app.server
 
@@ -33,37 +32,146 @@ for idx, val in tsne_df.groupby(tsne_df.index):
     idx = int(idx)
 
     scatter = go.Scatter3d(
-            name=idx,
-            x=val['x'],
-            y=val['y'],
-            z=val['z'],
-            mode='markers',
-            marker=dict(
-                color=color_list[idx],
-                size=2,
-                symbol='circle-dot'
-            )
+        name=idx,
+        x=val['x'],
+        y=val['y'],
+        z=val['z'],
+        mode='markers',
+        marker=dict(
+            color=color_list[idx],
+            size=2,
+            symbol='circle-dot'
         )
+    )
     data.append(scatter)
-
 
 app.layout = html.Div([
     html.H1(
-                'T-SNE Explorer',
-                className='tsne_h1',
-                style={'text-align': 'center'}
-            ),
-    dcc.Graph(
-            id='scatter_3d',
-            figure={
-                'data': data,
-            },
-            style={'height': '75vh',
-                   'width': '75vw',
-                   'border': '3px solid green',
-                   'margin':'auto'
-                   }
+        'T-SNE Explorer',
+        className='tsne_h1',
+        style={'text-align': 'center'}
+    ),
+
+    html.Div([
+        html.P('Perplexity:',
+               style={
+                   'display': 'inline-block',
+                   'verticalAlign': 'mid',
+                   'marginRight': '5px',
+               }),
+
+        html.Div([
+            dcc.Input(
+                id='perplexity-state',
+                type='number',
+                value=5,
+                max=50,
+                min=5,
+                size=5
+            )
+        ],
+            style={
+                'display': 'inline-block',
+                'marginBottom': '0px'
+            }
         )
+    ]),
+
+    html.Div([
+        html.P('Number of Iterations:',
+               style={
+                   'display': 'inline-block',
+                   'verticalAlign': 'mid',
+                   'marginRight': '5px',
+               }),
+
+        html.Div([
+            dcc.Input(
+                id='n-iter-state',
+                type='number',
+                value=300,
+                max=1000,
+                min=250,
+                size=10
+            )
+        ],
+            style={
+                'display': 'inline-block',
+                'marginBottom': '0px'
+            }
+        )
+    ]),
+
+    # Number of Iterations without Progress
+    html.Div([
+        html.P(
+            'Iterations without Progress:',
+            style={
+                'display': 'inline-block',
+                'verticalAlign': 'mid',
+                'marginRight': '5px',
+            }),
+
+        html.Div([
+            dcc.Input(
+                id='iter-wp-state',
+                type='number',
+                value=300,
+                max=1000,
+                min=50,
+                size=10
+            )
+        ],
+            style={
+                'display': 'inline-block',
+                'marginBottom': '0px'
+            }
+        )
+    ]),
+
+    html.Div([
+        html.P('Learning Rate:',
+               style={
+                   'display': 'inline-block',
+                   'verticalAlign': 'mid',
+                   'marginRight': '5px',
+               }),
+
+        html.Div([
+            dcc.Input(
+                id='lr-state',
+                type='number',
+                value=200,
+                max=1000,
+                min=10,
+                size=10
+            )
+        ],
+            style={
+                'display': 'inline-block',
+                'marginBottom': '0px'
+            }
+        )
+    ]),
+
+    html.Button(
+            id='submit-button',
+            n_clicks=0,
+            children='Start Training'
+        ),
+
+    dcc.Graph(
+        id='scatter_3d',
+        figure={
+            'data': data,
+        },
+        style={
+            'height': '75vh',
+               'width': '75vw',
+               'border': '3px solid green',
+               'margin': 'auto'
+               }
+    )
 ]
 )
 
