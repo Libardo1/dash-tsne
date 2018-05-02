@@ -4,40 +4,47 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import numpy as np
+import pandas as pd
 import plotly.graph_objs as go
+from sklearn.decomposition import PCA
+
 
 app = dash.Dash("T-SNE")
 server = app.server
 
+tsne_df = pd.read_csv("tsne_3d.csv", index_col=0)
 
-x, y, z = np.random.multivariate_normal(np.array([0,0,0]), np.eye(3), 200).transpose()
-trace1 = go.Scatter3d(
-    x=x,
-    y=y,
-    z=z,
-    mode='markers',
-    marker=dict(
-        size=3,
-        line=dict(
-            color='rgb(217, 217, 217)'
+data = []
+
+color_list = [
+    'rgb(0,0,255)',
+    'rgb(0, 255, 0)',
+    'rgb(255, 0, 0)',
+    'rgb(0, 0, 0)',
+    'rgb(165,42,42)',
+    'rgb(255,222,173)',
+    'rgb(255,105,180)',
+    'rgb(75,0,130)',
+    'rgb(255,215,0)',
+    'rgb(255,165,0)'
+]
+
+for idx, val in tsne_df.groupby(tsne_df.index):
+    idx = int(idx)
+
+    scatter = go.Scatter3d(
+            name=idx,
+            x=val['x'],
+            y=val['y'],
+            z=val['z'],
+            mode='markers',
+            marker=dict(
+                color=color_list[idx],
+                size=2,
+                symbol='circle-dot'
+            )
         )
-    )
-)
-
-x2, y2, z2 = np.random.multivariate_normal(np.array([0,0,0]), np.eye(3), 200).transpose()
-trace2 = go.Scatter3d(
-    x=x2,
-    y=y2,
-    z=z2,
-    mode='markers',
-    marker=dict(
-        color='rgb(127, 127, 127)',
-        size=3,
-        symbol='circle-dot'
-    )
-)
-
-data = [trace1, trace2]
+    data.append(scatter)
 
 
 app.layout = html.Div([
@@ -53,10 +60,12 @@ app.layout = html.Div([
             },
             style={'height': '75vh',
                    'width': '75vw',
-                   'border': '3px solid green'
+                   'border': '3px solid green',
+                   'margin':'auto'
                    }
         )
-])
+]
+)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
