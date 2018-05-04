@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import base64
-import datetime
 import io
 import dash
 import dash_core_components as dcc
@@ -199,6 +198,9 @@ def parse_content(contents, filename):
     """This function parses the raw content and the file names, and returns the dataframe containing the data, as well
     as the message displaying whether it was successfully parsed or not."""
 
+    if contents is None:
+        return None, ""
+
     content_type, content_string = contents.split(',')
 
     decoded = base64.b64decode(content_string)
@@ -229,7 +231,6 @@ def parse_data(contents, filename):
     global data_df
 
     data_df, message = parse_content(contents, filename)
-
     return message
 
 
@@ -238,18 +239,27 @@ def parse_data(contents, filename):
                Input('upload-label', 'filename')
                ])
 def parse_label(contents, filename):
-    # Modify the global label dataframe
-    global label_df
+    global label_df  # Modify the global label dataframe
 
     label_df, message = parse_content(contents, filename)
-
     return message
 
 
 @app.callback(Output('tsne-3d-plot', 'figure'),
-              [Input('tsne-train-button', 'n_clicks')])
-def update_graph(n_clicks):
-    """When the button is clicked, the t-SNE algorithm is run, and the graph is updated when it is finished running"""
+              [Input('tsne-train-button', 'n_clicks')],  # TODO: n_clicks is uneeded here, find the right way to use button as input
+              [State('perplexity-state', 'value'),
+               State('n-iter-state', 'value'),
+               State('lr-state', 'value'),
+               State('pca-state', 'value')])
+def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
+    """When the button is clicked, the t-SNE algorithm is run, and the graph is updated when it finishes running"""
+
+    print(perplexity, n_iter, learning_rate, pca_dim)
+
+    # TODO: This is a temporary fix to the null error thrown. Need to find more reasonable solution.
+    if data_df is None or label_df is None:
+        global data
+        return {'data': data, 'layout': tsne_layout}  # Return the default values
 
     pca = PCA(n_components=3)
 
@@ -286,9 +296,9 @@ def update_graph(n_clicks):
 # Load external CSS
 external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",
-                "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
-                "//fonts.googleapis.com/css?family=Raleway:400,300,600",
-                "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
+    "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
+    "//fonts.googleapis.com/css?family=Raleway:400,300,600",
+    "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
 
 for css in external_css:
     app.css.append_css({"external_url": css})
