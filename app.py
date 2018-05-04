@@ -135,7 +135,7 @@ app.layout = html.Div([
             input_field("Learning Rate:", "lr-state", 200, 1000, 10),
 
             # TODO: Change the max value to be the dimension of the input csv file
-            input_field("PCA dimensions:", "pca-state", 50, 100, 3),
+            input_field("PCA dimensions:", "pca-state", 50, 10000, 3),
 
             html.Button(
                 id='tsne-train-button',
@@ -254,12 +254,31 @@ def parse_label(contents, filename):
 def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
     """When the button is clicked, the t-SNE algorithm is run, and the graph is updated when it finishes running"""
 
-    print(perplexity, n_iter, learning_rate, pca_dim)
-
     # TODO: This is a temporary fix to the null error thrown. Need to find more reasonable solution.
     if data_df is None or label_df is None:
         global data
         return {'data': data, 'layout': tsne_layout}  # Return the default values
+
+    # Fix the range of possible values
+    if n_iter > 1000:
+        n_iter = 1000
+    elif n_iter < 10:
+        n_iter = 10
+
+    if perplexity > 50:
+        perplexity = 50
+    elif perplexity < 5:
+        perplexity = 5
+
+    if learning_rate > 1000:
+        learning_rate = 1000
+    elif learning_rate < 10:
+        learning_rate = 10
+
+    if pca_dim > data_df.shape[0]:  # Max PCA dimension is number of dimension of dataset
+        pca_dim = data_df.shape[0]
+    elif pca_dim < 3:
+        pca_dim = 3
 
     pca = PCA(n_components=3)
 
