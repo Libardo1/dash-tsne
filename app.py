@@ -179,11 +179,13 @@ app.layout = html.Div([
                    style={
                        'margin-bottom': '0px'
                    }),
+
             html.P(id='upload-label-message',
                    style={
                        'margin-bottom': '0px'
-                   })
+                   }),
 
+            html.P(id='status-display-message')
         ],
             className="three columns"
         )
@@ -231,6 +233,10 @@ def parse_data(contents, filename):
     global data_df
 
     data_df, message = parse_content(contents, filename)
+
+    if data_df is not None and data_df.shape[1] < 3:
+        message = f'The dimensions of {filename} are invalid.'
+
     return message
 
 
@@ -242,6 +248,11 @@ def parse_label(contents, filename):
     global label_df  # Modify the global label dataframe
 
     label_df, message = parse_content(contents, filename)
+
+    # The label should always have a dimension of 1
+    if label_df is not None and label_df.shape[1] != 1:
+        message = f'The dimensions of {filename} are invalid.'
+
     return message
 
 
@@ -275,8 +286,8 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
     elif learning_rate < 10:
         learning_rate = 10
 
-    if pca_dim > data_df.shape[0]:  # Max PCA dimension is number of dimension of dataset
-        pca_dim = data_df.shape[0]
+    if pca_dim > data_df.shape[1]:  # Max PCA dimension is number of dimension of dataset
+        pca_dim = data_df.shape[1]
     elif pca_dim < 3:
         pca_dim = 3
 
