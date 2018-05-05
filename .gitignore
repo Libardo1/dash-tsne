@@ -7,3 +7,7 @@ mnist2500_X.txt
 tsne_3d.csv
 mnist_data.csv
 mnist_label.csv
+input_2000.csv
+input_750.csv
+input_data.csv
+*.csv

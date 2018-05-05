@@ -2,6 +2,7 @@
 import base64
 import io
 import dash
+import time
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
@@ -9,26 +10,28 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 app = dash.Dash("T-SNE")
 server = app.server
 
 tsne_df = pd.read_csv("tsne_3d.csv", index_col=0)
 
-# Initialize the data and label global variable
-data_df, label_df = None, None
+# Initialize the global variables to null
+data_df, label_df, kl_divergence, end_time = None, None, None, None
+
 
 color_list = [
-    'rgb(0,0,255)',
-    'rgb(0, 255, 0)',
-    'rgb(255, 0, 0)',
-    'rgb(0, 0, 0)',
-    'rgb(165,42,42)',
-    'rgb(255,222,173)',
-    'rgb(255,105,180)',
-    'rgb(75,0,130)',
-    'rgb(255,215,0)',
-    'rgb(255,165,0)'
+    '#FAA613',
+    '#F44708',
+    '#A10702',
+    '#550527',
+    '#688E26',
+    '#393D3F',
+    '#D5BBB1',
+    '#9CC4B2',
+    '#C98CA7',
+    '#E76D83'
 ]
 
 data = []
@@ -135,7 +138,7 @@ app.layout = html.Div([
             input_field("Learning Rate:", "lr-state", 200, 1000, 10),
 
             # TODO: Change the max value to be the dimension of the input csv file
-            input_field("PCA dimensions:", "pca-state", 50, 10000, 3),
+            input_field("Initial PCA dimensions:", "pca-state", 50, 10000, 3),
 
             html.Button(
                 id='tsne-train-button',
@@ -145,7 +148,7 @@ app.layout = html.Div([
 
             dcc.Upload(
                 id='upload-data',
-                children=html.A('Upload your main data here.'),
+                children=html.A('Upload your input data here.'),
                 style={
                     'height': '45px',
                     'line-height': '45px',
@@ -175,17 +178,28 @@ app.layout = html.Div([
                 multiple=False
             ),
 
-            html.P(id='upload-data-message',
-                   style={
-                       'margin-bottom': '0px'
-                   }),
+            html.Div([
+                html.P(id='upload-data-message',
+                       style={
+                           'margin-bottom': '0px'
+                       }),
 
-            html.P(id='upload-label-message',
-                   style={
-                       'margin-bottom': '0px'
-                   }),
+                html.P(id='upload-label-message',
+                       style={
+                           'margin-bottom': '0px'
+                       }),
 
-            html.P(id='status-display-message')
+                html.Div(id='training-status-message',
+                         style={
+                             'margin-bottom': '0px'
+                         }),
+            ],
+                id='output-messages',
+                style={
+                    'margin-bottom': '2px',
+                    'margin-top': '2px'
+                }
+            )
         ],
             className="three columns"
         )
@@ -257,16 +271,19 @@ def parse_label(contents, filename):
 
 
 @app.callback(Output('tsne-3d-plot', 'figure'),
-              [Input('tsne-train-button', 'n_clicks')],  # TODO: n_clicks is uneeded here, find the right way to use button as input
+              [Input('tsne-train-button', 'n_clicks')],
               [State('perplexity-state', 'value'),
                State('n-iter-state', 'value'),
                State('lr-state', 'value'),
                State('pca-state', 'value')])
 def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
-    """When the button is clicked, the t-SNE algorithm is run, and the graph is updated when it finishes running"""
+    """Run the t-SNE algorithm upon clicking the training button"""
+
+    # The global variables that will be modified
+    global final_score, end_time, kl_divergence
 
     # TODO: This is a temporary fix to the null error thrown. Need to find more reasonable solution.
-    if data_df is None or label_df is None:
+    if n_clicks <= 0 or data_df is None or label_df is None:
         global data
         return {'data': data, 'layout': tsne_layout}  # Return the default values
 
@@ -286,25 +303,40 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
     elif learning_rate < 10:
         learning_rate = 10
 
-    if pca_dim > data_df.shape[1]:  # Max PCA dimension is number of dimension of dataset
+    if pca_dim > data_df.shape[1]:  # We limit the pca_dim to the dimensionality of the dataset
         pca_dim = data_df.shape[1]
     elif pca_dim < 3:
         pca_dim = 3
 
-    pca = PCA(n_components=3)
+    # Start timer
+    start_time = time.time()
 
-    # Combine the reduced data with its label
-    reduced_df = pd.DataFrame(pca.fit_transform(data_df), columns=['x', 'y', 'z'])
+    # Apply PCA on the data first
+    pca = PCA(n_components=pca_dim)
+    data_pca = pca.fit_transform(data_df)
+
+    # Then, apply t-SNE with the input parameters
+    tsne = TSNE(n_components=3,
+                perplexity=perplexity,
+                learning_rate=learning_rate,
+                n_iter=n_iter)
+
+    data_tsne = tsne.fit_transform(data_pca)
+    kl_divergence = tsne.kl_divergence_
+
+    # Combine the reduced t-sne data with its label
+    tsne_data_df = pd.DataFrame(data_tsne, columns=['x', 'y', 'z'])
 
     label_df.columns = ['label']
 
-    combined_df = reduced_df.join(label_df)
+    combined_df = tsne_data_df.join(label_df)
 
     data = []
 
+    color_idx_counter = 0
+
     # Group by the values of the label
     for idx, val in combined_df.groupby('label'):
-        idx = int(idx)
 
         scatter = go.Scatter3d(
             name=idx,
@@ -313,14 +345,41 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
             z=val['z'],
             mode='markers',
             marker=dict(
-                color=color_list[idx],
+                color=color_list[color_idx_counter],
                 size=2,
                 symbol='circle-dot'
             )
         )
         data.append(scatter)
 
+        color_idx_counter += 1
+
+    end_time = time.time() - start_time
+
     return {'data': data, 'layout': tsne_layout}
+
+
+# @app.callback(Output('training-status-message', 'children'),
+#               [Input('tsne-train-button', 'n_clicks')])
+# def training_status(n_clicks):
+#     """Update the output messages upon clicking the training button"""
+#
+#     if n_clicks > 0:
+#         return ['t-SNE is currently training.',
+#                 html.Div(className='loader')]
+#     else:
+#         return None
+
+
+@app.callback(Output('training-status-message', 'children'),
+              [Input('tsne-3d-plot', 'figure')])
+def update_training_info(figure):
+
+    if end_time is not None and kl_divergence is not None:
+        return [
+            html.P(f"t-SNE trained in {end_time:.2f} seconds."),
+            html.P(f"Final KL-Divergence: {kl_divergence:.2f}")
+        ]
 
 
 # Load external CSS
@@ -328,7 +387,9 @@ external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",
     "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
     "//fonts.googleapis.com/css?family=Raleway:400,300,600",
-    "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"]
+    "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+    "https://codepen.io/chriddyp/pen/brPBPO.css"
+]
 
 for css in external_css:
     app.css.append_css({"external_url": css})
