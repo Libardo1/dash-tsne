@@ -107,7 +107,7 @@ tsne_layout = go.Layout(
 app.layout = html.Div([
     html.Div([
         html.H2(
-            'T-SNE Explorer',
+            't-SNE Explorer',
             id='title',
             style={
                 'float': 'left',
@@ -145,7 +145,7 @@ app.layout = html.Div([
         html.Div([
 
             html.H4(
-                'T-SNE Parameters',
+                't-SNE Parameters',
                 id='tsne_h4'
             ),
 
