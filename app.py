@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import io
+import os
 import dash
 import time
 import dash_core_components as dcc
@@ -15,11 +16,13 @@ from sklearn.manifold import TSNE
 app = dash.Dash("T-SNE")
 server = app.server
 
-tsne_df = pd.read_csv("tsne_3d.csv", index_col=0)
+if 'DYNO' in os.environ:
+    app.scripts.append_script({
+        'external_url': 'https://cdn.rawgit.com/chriddyp/ca0d8f02a1659981a0ea7f013a378bbd/raw/e79f3f789517deec58f41251f7dbb6bee72c44ab/plotly_ga.js'
+    })
 
 # Initialize the global variables to null
 data_df, label_df, kl_divergence, end_time = None, None, None, None
-
 
 color_list = [
     '#FAA613',
@@ -34,6 +37,9 @@ color_list = [
     '#E76D83'
 ]
 
+# Generate the default scatter plot
+tsne_df = pd.read_csv("tsne_3d.csv", index_col=0)
+
 data = []
 
 for idx, val in tsne_df.groupby(tsne_df.index):
@@ -47,7 +53,7 @@ for idx, val in tsne_df.groupby(tsne_df.index):
         mode='markers',
         marker=dict(
             color=color_list[idx],
-            size=2,
+            size=2.5,
             symbol='circle-dot'
         )
     )
@@ -99,11 +105,25 @@ tsne_layout = go.Layout(
 
 # App
 app.layout = html.Div([
-    html.H1(
-        'T-SNE Explorer',
-        id='title',
-        style={'text-align': 'center'}
-    ),
+    html.Div([
+        html.H2(
+            'T-SNE Explorer',
+            id='title',
+            style={
+                'float': 'left',
+                'margin-top': '20px',
+                'margin-bottom': '0',
+                'margin-left': '7px'
+            }
+        ),
+        html.Img(
+            src="https://s3-us-west-1.amazonaws.com/plotly-tutorials/logo/new-branding/dash-logo-by-plotly-stripe.png",
+            style={
+                'height': '100px',
+                'float': 'right'
+            }
+        )
+    ]),
 
     html.Div([
         html.Div([
@@ -119,7 +139,7 @@ app.layout = html.Div([
                 },
             )
         ],
-            className="seven columns offset-by-one"
+            className="eight columns"
         ),
 
         html.Div([
@@ -201,12 +221,21 @@ app.layout = html.Div([
                 }
             )
         ],
-            className="three columns"
+            className="four columns"
         )
     ],
         className="row"
     )
-]
+],
+    className="container",
+    style={
+        'width': '90%',
+        'max-width': 'none',
+        'font-size': '1.5rem'
+        # 'border-radius': '5px',
+        # 'box-shadow': 'rgb(240, 240, 240) 5px 5px 5px 0px',
+        # 'border': 'thin solid rgb(240, 240, 240)'
+    }
 )
 
 
@@ -337,7 +366,6 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
 
     # Group by the values of the label
     for idx, val in combined_df.groupby('label'):
-
         scatter = go.Scatter3d(
             name=idx,
             x=val['x'],
@@ -359,22 +387,9 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
     return {'data': data, 'layout': tsne_layout}
 
 
-# @app.callback(Output('training-status-message', 'children'),
-#               [Input('tsne-train-button', 'n_clicks')])
-# def training_status(n_clicks):
-#     """Update the output messages upon clicking the training button"""
-#
-#     if n_clicks > 0:
-#         return ['t-SNE is currently training.',
-#                 html.Div(className='loader')]
-#     else:
-#         return None
-
-
 @app.callback(Output('training-status-message', 'children'),
               [Input('tsne-3d-plot', 'figure')])
 def update_training_info(figure):
-
     if end_time is not None and kl_divergence is not None:
         return [
             html.P(f"t-SNE trained in {end_time:.2f} seconds."),
@@ -388,7 +403,8 @@ external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
     "//fonts.googleapis.com/css?family=Raleway:400,300,600",
     "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
-    "https://codepen.io/chriddyp/pen/brPBPO.css"
+    "https://codepen.io/chriddyp/pen/brPBPO.css",
+    "https://cdn.rawgit.com/plotly/dash-app-stylesheets/2cc54b8c03f4126569a3440aae611bbef1d7a5dd/stylesheet.css"
 ]
 
 for css in external_css:
