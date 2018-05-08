@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from keras.datasets import *
 import sys
 
@@ -63,6 +63,13 @@ elif dataset_name.lower() in ["cifar", "cifar10"]:
     X, y = cifar10.load_data()[0]
     selected_idx = cifar_idx
 
+elif dataset_name.lower() in ['cifar_gray', 'cifar10_gray', 'cifargray']:
+    from skimage.color import rgb2gray
+
+    X, y = cifar10.load_data()[0]
+    selected_idx = cifar_idx
+    X = rgb2gray(X)
+
 elif dataset_name.lower() in ["fashion", "fashion_mnist", "fashionmnist"]:
     X, y = fashion_mnist.load_data()[0]
     selected_idx = fashion_idx
@@ -87,7 +94,7 @@ if sample_size > df.shape[0]:
 
 samples = df.sample(n=sample_size, random_state=1234)
 
-samples.to_csv(f"{dataset_name}_{sample_size}_input.csv", index=False)
-pd.DataFrame(samples.index).to_csv(f"{dataset_name}_{sample_size}_labels.csv", index=False)
+samples.to_csv(f"data/{dataset_name}_{sample_size}_input.csv", index=False)
+pd.DataFrame(samples.index).to_csv(f"data/{dataset_name}_{sample_size}_labels.csv", index=False)
 
 print("CSV files created.")

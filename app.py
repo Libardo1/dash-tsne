@@ -8,13 +8,16 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import numpy as np
+import flask
+from flask_cors import CORS
 import pandas as pd
 import plotly.graph_objs as go
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-app = dash.Dash("T-SNE")
+app = dash.Dash(__name__)
 server = app.server
+CORS(server)
 
 if 'DYNO' in os.environ:
     app.scripts.append_script({
@@ -38,7 +41,7 @@ color_list = [
 ]
 
 # Generate the default scatter plot
-tsne_df = pd.read_csv("tsne_3d.csv", index_col=0)
+tsne_df = pd.read_csv("data/tsne_3d.csv", index_col=0)
 
 data = []
 
@@ -179,7 +182,8 @@ app.layout = html.Div([
                     'margin-top': '5px',
                     'margin-bottom': '5 px'
                 },
-                multiple=False
+                multiple=False,
+                max_size=-1
             ),
 
             dcc.Upload(
@@ -195,7 +199,8 @@ app.layout = html.Div([
                     'margin-top': '5px',
                     'margin-bottom': '5px'
                 },
-                multiple=False
+                multiple=False,
+                max_size=-1
             ),
 
             html.Div([
@@ -211,7 +216,8 @@ app.layout = html.Div([
 
                 html.Div(id='training-status-message',
                          style={
-                             'margin-bottom': '0px'
+                             'margin-bottom': '0px',
+                             'margin-top': '0px'
                          }),
             ],
                 id='output-messages',
@@ -374,7 +380,7 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
             mode='markers',
             marker=dict(
                 color=color_list[color_idx_counter],
-                size=2,
+                size=2.5,
                 symbol='circle-dot'
             )
         )
@@ -392,8 +398,10 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
 def update_training_info(figure):
     if end_time is not None and kl_divergence is not None:
         return [
-            html.P(f"t-SNE trained in {end_time:.2f} seconds."),
-            html.P(f"Final KL-Divergence: {kl_divergence:.2f}")
+            html.P(f"t-SNE trained in {end_time:.2f} seconds.",
+                   style={'margin-bottom': '0px'}),
+            html.P(f"Final KL-Divergence: {kl_divergence:.2f}",
+                   style={'margin-bottom': '0px'})
         ]
 
 
