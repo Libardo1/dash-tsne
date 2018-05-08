@@ -49,7 +49,7 @@ for idx, val in tsne_df.groupby(tsne_df.index):
     idx = int(idx)
 
     scatter = go.Scatter3d(
-        name=idx,
+        name=f"Digit {idx}",
         x=val['x'],
         y=val['y'],
         z=val['z'],
