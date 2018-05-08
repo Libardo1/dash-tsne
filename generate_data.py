@@ -14,29 +14,69 @@ except ValueError as e:
     print("The input value for sample size is invalid:", e)
     sys.exit(1)
 
+# Dataset indices
+mnist_idx = [
+    "Digit 0",
+    "Digit 1",
+    "Digit 2",
+    "Digit 3",
+    "Digit 4",
+    "Digit 5",
+    "Digit 6",
+    "Digit 7",
+    "Digit 8",
+    "Digit 9"
+]
+
+cifar_idx = [
+    "airplane",
+    "automobile",
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse",
+    "ship",
+    "truck"
+]
+
+fashion_idx = [
+    "T-Shirt",
+    "Trouser",
+    "Pullover",
+    "Dress",
+    "Coat",
+    "Sandal",
+    "Shirt",
+    "Sneaker",
+    "Bag",
+    "Ankle boot"
+]
 
 # Load Dataset
-if dataset_name.lower() == "mnist":
+if dataset_name.lower() in ["mnist", "mnist_digits", "mnistdigits"]:
     X, y = mnist.load_data()[0]
-
-    # If it's the mnist dataset, change the integer into their string representation, e.g. 0 --> "Digit 0"
-    y = [f"Digit {int(val)}" for val in y]
+    selected_idx = mnist_idx
 
 elif dataset_name.lower() in ["cifar", "cifar10"]:
     X, y = cifar10.load_data()[0]
+    selected_idx = cifar_idx
 
 elif dataset_name.lower() in ["fashion", "fashion_mnist", "fashionmnist"]:
     X, y = fashion_mnist.load_data()[0]
+    selected_idx = fashion_idx
 
 else:
     print("Dataset not found.")
     sys.exit(1)
 
+y = np.array([selected_idx[int(val)] for val in y])
+
 print("Dataset loaded.")
 
 # Flatten the array, and normalize it
-X = X.reshape(X.shape[0], -1)/255.
-
+X = X.reshape(X.shape[0], -1) / 255.
 
 # We will select the integer values to be the index
 df = pd.DataFrame(X, index=y)
