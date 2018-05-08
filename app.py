@@ -14,6 +14,7 @@ import pandas as pd
 import plotly.graph_objs as go
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+import json
 
 app = dash.Dash(__name__)
 server = app.server
@@ -25,7 +26,7 @@ if 'DYNO' in os.environ:
     })
 
 # Initialize the global variables to null
-data_df, label_df, kl_divergence, end_time = None, None, None, None
+data_df, label_df = None, None
 
 color_list = [
     '#FAA613',
@@ -108,6 +109,19 @@ tsne_layout = go.Layout(
 
 # App
 app.layout = html.Div([
+    # In-browser storage of global variables
+    html.Div([
+        html.Div(
+            id="data-df-and-message",
+            style={'display': 'none'}
+        ),
+
+        html.Div(
+            id="label-df-and-message",
+            style={'display': 'none'}
+        )
+    ]),
+
     html.Div([
         html.H2(
             't-SNE Explorer',
@@ -130,6 +144,18 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
+            # Data about the graph
+            html.Div(
+                id="kl-divergence",
+                style={'display': 'none'}
+            ),
+
+            html.Div(
+                id="end-time",
+                style={'display': 'none'}
+            ),
+
+            # The graph
             dcc.Graph(
                 id='tsne-3d-plot',
                 figure={
@@ -141,6 +167,7 @@ app.layout = html.Div([
                 },
             )
         ],
+            id="plot-div",
             className="eight columns"
         ),
 
@@ -155,11 +182,8 @@ app.layout = html.Div([
 
             input_field("Number of Iterations:", "n-iter-state", 300, 1000, 250),
 
-            # input_field("Iterations without Progress:", "iter-wp-state", 300, 1000, 50),
-
             input_field("Learning Rate:", "lr-state", 200, 1000, 10),
 
-            # TODO: Change the max value to be the dimension of the input csv file
             input_field("Initial PCA dimensions:", "pca-state", 30, 10000, 3),
 
             html.Button(
@@ -273,53 +297,94 @@ def parse_content(contents, filename):
     return df, f'{filename} successfully processed.'
 
 
-@app.callback(Output('upload-data-message', 'children'),
+@app.callback(Output('data-df-and-message', 'children'),
               [Input('upload-data', 'contents'),
-               Input('upload-data', 'filename')
-               ])
+               Input('upload-data', 'filename')])
 def parse_data(contents, filename):
-    global data_df
 
     data_df, message = parse_content(contents, filename)
 
-    if data_df is not None and data_df.shape[1] < 3:
-        message = f'The dimensions of {filename} are invalid.'
+    if data_df is None:
+        return [None, message]
 
-    return message
+    elif data_df.shape[1] < 3:
+        return [None, f'The dimensions of {filename} are invalid.']
+
+    return [data_df.to_json(orient="split"), message]
 
 
-@app.callback(Output('upload-label-message', 'children'),
+@app.callback(Output('label-df-and-message', 'children'),
               [Input('upload-label', 'contents'),
-               Input('upload-label', 'filename')
-               ])
+               Input('upload-label', 'filename')])
 def parse_label(contents, filename):
-    global label_df  # Modify the global label dataframe
 
     label_df, message = parse_content(contents, filename)
 
-    # The label should always have a dimension of 1
-    if label_df is not None and label_df.shape[1] != 1:
-        message = f'The dimensions of {filename} are invalid.'
+    if label_df is None:
+        return [None, message]
 
-    return message
+    elif label_df.shape[1] != 1:
+        return [None, f'The dimensions of {filename} are invalid.']
+
+    return [label_df.to_json(orient="split"), message]
 
 
-@app.callback(Output('tsne-3d-plot', 'figure'),
+@app.callback(Output('upload-data-message', 'children'),
+              [Input('data-df-and-message', 'children')])
+def output_upload_status_data(data):
+    return data[1]
+
+
+@app.callback(Output('upload-label-message', 'children'),
+              [Input('label-df-and-message', 'children')])
+def output_upload_status_label(data):
+    return data[1]
+
+
+@app.callback(Output('plot-div', 'children'),
               [Input('tsne-train-button', 'n_clicks')],
               [State('perplexity-state', 'value'),
                State('n-iter-state', 'value'),
                State('lr-state', 'value'),
-               State('pca-state', 'value')])
-def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
+               State('pca-state', 'value'),
+               State('data-df-and-message', 'children'),
+               State('label-df-and-message', 'children')
+               ])
+def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div, label_div):
     """Run the t-SNE algorithm upon clicking the training button"""
 
-    # The global variables that will be modified
-    global final_score, end_time, kl_divergence
-
-    # TODO: This is a temporary fix to the null error thrown. Need to find more reasonable solution.
-    if n_clicks <= 0 or data_df is None or label_df is None:
+    # Fix for startup POST
+    if n_clicks <= 0 or data_div is None or label_div is None:
         global data
-        return {'data': data, 'layout': tsne_layout}  # Return the default values
+        return [
+            # Data about the graph
+            html.Div(
+                id="kl-divergence",
+                style={'display': 'none'}
+            ),
+
+            html.Div(
+                id="end-time",
+                style={'display': 'none'}
+            ),
+
+            # The graph
+            dcc.Graph(
+                id='tsne-3d-plot',
+                figure={
+                    'data': data,
+                    'layout': tsne_layout
+                },
+                style={
+                    'height': '80vh',
+                },
+            )
+        ]
+
+    # Extract the data dataframe and the labels dataframe from the divs. they are both the first child of the div, and
+    # are serialized in json
+    data_df = pd.read_json(data_div[0], orient="split")
+    label_df = pd.read_json(label_div[0], orient="split")
 
     # Fix the range of possible values
     if n_iter > 1000:
@@ -389,13 +454,44 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim):
 
     end_time = time.time() - start_time
 
-    return {'data': data, 'layout': tsne_layout}
+    return [
+            # Data about the graph
+            html.Div([
+                kl_divergence
+            ],
+                id="kl-divergence",
+                style={'display': 'none'}
+            ),
+
+            html.Div([
+                end_time
+            ],
+                id="end-time",
+                style={'display': 'none'}
+            ),
+
+            # The graph
+            dcc.Graph(
+                id='tsne-3d-plot',
+                figure={
+                    'data': data,
+                    'layout': tsne_layout
+                },
+                style={
+                    'height': '80vh',
+                },
+            )
+        ]
 
 
 @app.callback(Output('training-status-message', 'children'),
-              [Input('tsne-3d-plot', 'figure')])
-def update_training_info(figure):
+              [Input('end-time', 'children'),
+               Input('kl-divergence', 'children')])
+def update_training_info(end_time, kl_divergence):
     if end_time is not None and kl_divergence is not None:
+        end_time = end_time[0]
+        kl_divergence = kl_divergence[0]
+
         return [
             html.P(f"t-SNE trained in {end_time:.2f} seconds.",
                    style={'margin-bottom': '0px'}),
