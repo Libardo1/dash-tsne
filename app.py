@@ -138,7 +138,6 @@ app.layout = html.Div([
                 },
                 style={
                     'height': '80vh',
-                    # 'width': '60vw',
                 },
             )
         ],
@@ -161,7 +160,7 @@ app.layout = html.Div([
             input_field("Learning Rate:", "lr-state", 200, 1000, 10),
 
             # TODO: Change the max value to be the dimension of the input csv file
-            input_field("Initial PCA dimensions:", "pca-state", 50, 10000, 3),
+            input_field("Initial PCA dimensions:", "pca-state", 30, 10000, 3),
 
             html.Button(
                 id='tsne-train-button',
