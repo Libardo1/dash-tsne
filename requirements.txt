@@ -9,4 +9,4 @@ scikit-learn==0.19.1
 flask==1.0.1
 flask_cors
 gunicorn==19.8.1
-scipy=1.0.1
+scipy==1.0.1
