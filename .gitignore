@@ -4,7 +4,6 @@
 mnist2500_labels.txt
 mnist2500_X.txt
 .ipynb_checkpoints/TSNE_MNIST_test-checkpoint.ipynb
-tsne_3d.csv
 mnist_data.csv
 mnist_label.csv
 input_2000.csv
