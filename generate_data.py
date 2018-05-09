@@ -2,7 +2,12 @@
 import pandas as pd
 import numpy as np
 from keras.datasets import *
+import os
 import sys
+
+# create the data folder if it doesn't exist yet
+if not os.path.exists("data"):
+    os.makedirs("data")
 
 # Try to parse the dataset argument
 dataset_name = sys.argv[1]
