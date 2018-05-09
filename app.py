@@ -138,6 +138,11 @@ app.layout = html.Div([
                 style={'display': 'none'}
             ),
 
+            html.Div(
+                id="error-message",
+                style={'display': 'none'}
+            ),
+
             # The graph
             dcc.Graph(
                 id='tsne-3d-plot',
@@ -225,6 +230,8 @@ app.layout = html.Div([
                              'margin-bottom': '0px',
                              'margin-top': '0px'
                          }),
+
+                html.P(id='error-status-message')
             ],
                 id='output-messages',
                 style={
@@ -237,7 +244,18 @@ app.layout = html.Div([
         )
     ],
         className="row"
-    )
+    ),
+
+    html.Div([
+        dcc.Markdown('''
+**What is t-SNE?**
+
+t-distributed stochastic neighbor embedding, created by van der Maaten and Hinton in 2008, is a visualization algorithm that reduce a high-dimensional space (e.g. an image or a word embedding) into two or three dimensions, so we can visualize how the data is distributed. A classical example is MNIST, a dataset of 60,000 handwritten digits of size 28x28 in black and white. When you reduce the MNIST dataset using t-SNE, you can clearly see all the digit clustered together, with the exception of a few that might have been poorly written. [You can read a detailed explanation of the algorithm on van der Maaten's personal blog.](https://lvdmaaten.github.io/tsne/)
+
+**How to use the app**
+
+To train your own t-SNE, you can input your own high-dimensional dataset and the corresponding labels inside the upload fields. For convenience, small sample datasets are included inside the data folder. The training can take a lot of time depending on the size of the dataset (the complete MNIST dataset could take 15-30 min), so it is recommended to clone the repo and run the app locally if you want to use bigger datasets.        ''')
+    ])
 ],
     className="container",
     style={
@@ -411,9 +429,41 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
 
             end_time = time.time() - start_time
 
+        # Catches Heroku server timeout
         except:
-            end_time = -1
-            kl_divergence = -1
+
+            return [
+                html.Div(
+                    id="kl-divergence",
+                    style={'display': 'none'}
+                ),
+
+                html.Div(
+                    id="end-time",
+                    style={'display': 'none'}
+                ),
+                html.Div([
+                    "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
+                ],
+                    id="error-message",
+                    style={'display': 'none'}
+                ),
+
+                # The graph
+                dcc.Graph(
+                    id='tsne-3d-plot',
+                    figure={
+                        'data': data,
+                        'layout': tsne_layout
+                    },
+                    style={
+                        'height': '80vh',
+                    },
+                )
+            ]
+            # pass
+
+
 
     return [
         # Data about the graph
@@ -450,6 +500,8 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
               [Input('end-time', 'children'),
                Input('kl-divergence', 'children')])
 def update_training_info(end_time, kl_divergence):
+    # If an error message was output during the training.
+
     if end_time is None or kl_divergence is None or end_time[0] is None or kl_divergence[0] is None:
         return None
     else:
@@ -461,6 +513,15 @@ def update_training_info(end_time, kl_divergence):
                    style={'margin-bottom': '0px'}),
             html.P(f"Final KL-Divergence: {kl_divergence:.2f}",
                    style={'margin-bottom': '0px'})
+        ]
+
+
+@app.callback(Output('error-status-message', 'children'),
+              [Input('error-message', 'children')])
+def show_error_message(error_message):
+    if error_message is not None:
+        return [
+            html.P(error_message[0])
         ]
 
 
