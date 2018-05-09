@@ -249,13 +249,16 @@ app.layout = html.Div([
     html.Div([
         dcc.Markdown('''
 **What is t-SNE?**
-
 t-distributed stochastic neighbor embedding, created by van der Maaten and Hinton in 2008, is a visualization algorithm that reduce a high-dimensional space (e.g. an image or a word embedding) into two or three dimensions, so we can visualize how the data is distributed. A classical example is MNIST, a dataset of 60,000 handwritten digits of size 28x28 in black and white. When you reduce the MNIST dataset using t-SNE, you can clearly see all the digit clustered together, with the exception of a few that might have been poorly written. [You can read a detailed explanation of the algorithm on van der Maaten's personal blog.](https://lvdmaaten.github.io/tsne/)
 
 **How to use the app**
-
-To train your own t-SNE, you can input your own high-dimensional dataset and the corresponding labels inside the upload fields. For convenience, small sample datasets are included inside the data folder. The training can take a lot of time depending on the size of the dataset (the complete MNIST dataset could take 15-30 min), so it is recommended to clone the repo and run the app locally if you want to use bigger datasets.        ''')
-    ])
+To train your own t-SNE, you can input your own high-dimensional dataset and the corresponding labels inside the upload fields. For convenience, small sample datasets are included inside the data folder. The training can take a lot of time depending on the size of the dataset (the complete MNIST dataset could take 15-30 min), so it is recommended to clone the repo and run the app locally if you want to use bigger datasets. [You can find the repository containing this model here.](https://github.com/plotly/dash-tsne)''')
+    ],
+        style={
+            'margin-top': '15px'
+        },
+        className="row"
+    )
 ],
     className="container",
     style={
@@ -354,6 +357,8 @@ def output_upload_status_label(data):
 def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div, label_div):
     """Run the t-SNE algorithm upon clicking the training button"""
 
+    error_message = None  # No error message at the beginning
+
     # Fix for startup POST
     if n_clicks <= 0 or data_div is None or label_div is None:
         global data
@@ -431,39 +436,38 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
 
         # Catches Heroku server timeout
         except:
-
-            return [
-                html.Div(
-                    id="kl-divergence",
-                    style={'display': 'none'}
-                ),
-
-                html.Div(
-                    id="end-time",
-                    style={'display': 'none'}
-                ),
-                html.Div([
-                    "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
-                ],
-                    id="error-message",
-                    style={'display': 'none'}
-                ),
-
-                # The graph
-                dcc.Graph(
-                    id='tsne-3d-plot',
-                    figure={
-                        'data': data,
-                        'layout': tsne_layout
-                    },
-                    style={
-                        'height': '80vh',
-                    },
-                )
-            ]
-            # pass
-
-
+            error_message = "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
+            kl_divergence, end_time = None, None
+            # return [
+            #     html.Div(
+            #         id="kl-divergence",
+            #         style={'display': 'none'}
+            #     ),
+            #
+            #     html.Div(
+            #         id="end-time",
+            #         style={'display': 'none'}
+            #     ),
+            #
+            #     html.Div([
+            #         "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
+            #     ],
+            #         id="error-message",
+            #         style={'display': 'none'}
+            #     ),
+            #
+            #     # The graph
+            #     dcc.Graph(
+            #         id='tsne-3d-plot',
+            #         figure={
+            #             'data': data,
+            #             'layout': tsne_layout
+            #         },
+            #         style={
+            #             'height': '80vh',
+            #         },
+            #     )
+            # ]
 
     return [
         # Data about the graph
@@ -478,6 +482,13 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
             end_time
         ],
             id="end-time",
+            style={'display': 'none'}
+        ),
+
+        html.Div([
+            error_message
+        ],
+            id="error-message",
             style={'display': 'none'}
         ),
 
@@ -523,6 +534,9 @@ def show_error_message(error_message):
         return [
             html.P(error_message[0])
         ]
+
+    else:
+        return []
 
 
 # Load external CSS
