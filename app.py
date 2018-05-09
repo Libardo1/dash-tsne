@@ -545,7 +545,8 @@ external_css = [
     "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css",
     "//fonts.googleapis.com/css?family=Raleway:400,300,600",
     "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
-    "https://codepen.io/chriddyp/pen/brPBPO.css",
+    # "https://cdn.rawgit.com/plotly/dash-tsne/92bb6e64/loading_screen.css",
+    "https://raw.githubusercontent.com/plotly/dash-tsne/master/loading_screen.css",
     "https://cdn.rawgit.com/plotly/dash-app-stylesheets/2cc54b8c03f4126569a3440aae611bbef1d7a5dd/stylesheet.css"
 ]
 
