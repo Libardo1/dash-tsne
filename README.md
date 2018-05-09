@@ -27,4 +27,4 @@ which will create the csv file with the corresponding parameters. At the moment,
 
 
 The following are screenshots for the app in this repo:
-![screenshot](screenshots/Screenshot1.PNG)
+![screenshot](screenshots/default_view.PNG)
