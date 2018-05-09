@@ -381,34 +381,39 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
                     learning_rate=learning_rate,
                     n_iter=n_iter)
 
-        data_tsne = tsne.fit_transform(data_pca)
-        kl_divergence = tsne.kl_divergence_
+        try:
+            data_tsne = tsne.fit_transform(data_pca)
+            kl_divergence = tsne.kl_divergence_
 
-        # Combine the reduced t-sne data with its label
-        tsne_data_df = pd.DataFrame(data_tsne, columns=['x', 'y', 'z'])
+            # Combine the reduced t-sne data with its label
+            tsne_data_df = pd.DataFrame(data_tsne, columns=['x', 'y', 'z'])
 
-        label_df.columns = ['label']
+            label_df.columns = ['label']
 
-        combined_df = tsne_data_df.join(label_df)
+            combined_df = tsne_data_df.join(label_df)
 
-        data = []
+            data = []
 
-        # Group by the values of the label
-        for idx, val in combined_df.groupby('label'):
-            scatter = go.Scatter3d(
-                name=idx,
-                x=val['x'],
-                y=val['y'],
-                z=val['z'],
-                mode='markers',
-                marker=dict(
-                    size=2.5,
-                    symbol='circle-dot'
+            # Group by the values of the label
+            for idx, val in combined_df.groupby('label'):
+                scatter = go.Scatter3d(
+                    name=idx,
+                    x=val['x'],
+                    y=val['y'],
+                    z=val['z'],
+                    mode='markers',
+                    marker=dict(
+                        size=2.5,
+                        symbol='circle-dot'
+                    )
                 )
-            )
-            data.append(scatter)
+                data.append(scatter)
 
-        end_time = time.time() - start_time
+            end_time = time.time() - start_time
+
+        except:
+            end_time = -1
+            kl_divergence = -1
 
     return [
         # Data about the graph
