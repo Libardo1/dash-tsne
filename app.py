@@ -166,9 +166,9 @@ app.layout = html.Div([
                 id='tsne_h4'
             ),
 
-            input_field("Perplexity:", "perplexity-state", 30, 50, 5),
+            input_field("Perplexity:", "perplexity-state", 20, 50, 5),
 
-            input_field("Number of Iterations:", "n-iter-state", 300, 1000, 250),
+            input_field("Number of Iterations:", "n-iter-state", 400, 1000, 250),
 
             input_field("Learning Rate:", "lr-state", 200, 1000, 10),
 
