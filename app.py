@@ -440,36 +440,6 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
         except:
             error_message = "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
             kl_divergence, end_time = None, None
-            # return [
-            #     html.Div(
-            #         id="kl-divergence",
-            #         style={'display': 'none'}
-            #     ),
-            #
-            #     html.Div(
-            #         id="end-time",
-            #         style={'display': 'none'}
-            #     ),
-            #
-            #     html.Div([
-            #         "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
-            #     ],
-            #         id="error-message",
-            #         style={'display': 'none'}
-            #     ),
-            #
-            #     # The graph
-            #     dcc.Graph(
-            #         id='tsne-3d-plot',
-            #         figure={
-            #             'data': data,
-            #             'layout': tsne_layout
-            #         },
-            #         style={
-            #             'height': '80vh',
-            #         },
-            #     )
-            # ]
 
     return [
         # Data about the graph
