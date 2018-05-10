@@ -28,3 +28,4 @@ which will create the csv file with the corresponding parameters. At the moment,
 
 The following are screenshots for the app in this repo:
 ![screenshot](screenshots/default_view.png)
+![screenshot2](screenshots/fashion_mnist_example.png)
