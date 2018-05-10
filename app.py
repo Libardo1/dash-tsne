@@ -375,8 +375,8 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
         # Fix the range of possible values
         if n_iter > 1000:
             n_iter = 1000
-        elif n_iter < 10:
-            n_iter = 10
+        elif n_iter < 250:
+            n_iter = 250
 
         if perplexity > 50:
             perplexity = 50
@@ -437,7 +437,8 @@ def update_graph(n_clicks, perplexity, n_iter, learning_rate, pca_dim, data_div,
             end_time = time.time() - start_time
 
         # Catches Heroku server timeout
-        except:
+        except Exception as e:
+            print(e)
             error_message = "We were unable to train the t-SNE model due to timeout. Try to clone the repo and run the program locally."
             kl_divergence, end_time = None, None
 
